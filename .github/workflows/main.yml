@@ -1,0 +1,53 @@
+name: GitHub Pages CI/CD
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  dev-env1:
+    name: Build site
+    runs-on: ubuntu-latest
+    environment: dev-env1
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build static site
+        run: |
+          mkdir dist
+          echo "<h1>Hello GitHub Pages</h1>" > dist/index.html
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  test-env:
+    name: Promote to Test
+    needs: dev-env1
+    runs-on: ubuntu-latest
+    environment: test-env
+
+    steps:
+      - name: Test gate
+        run: echo "Test checks passed"
+
+  peod-env:
+    name: Deploy to GitHub Pages
+    needs: test-env
+    runs-on: ubuntu-latest
+    environment:
+      name: prod-env
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4
